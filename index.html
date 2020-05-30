@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quiz By React</title>
+    <!-- download from https://ja.reactjs.org/docs/getting-started.html to -->
+    <!-- https://raw.githubusercontent.com/reactjs/reactjs.org/master/static/html/single-file-example.html -->
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      (() => {
+        //  二次元配列のthis.state中answersへのアクセスがうまくいかず、
+        //空配列などを使ったりと難しそうなので断念
+
+        let sets = [
+          {
+            question: "what is A?",
+            answers: [
+              {
+                content: "this is answerA1",
+                value: true,
+              },
+              {
+                content: "this is answerA2",
+                value: false,
+              },
+              {
+                content: "this is answerA3",
+                value: false,
+              },
+            ],
+          },
+
+          {
+            question: "what is B?",
+            answers: [
+              {
+                content: "this is answerB1",
+                value: false,
+              },
+              {
+                content: "this is answerB2",
+                value: true,
+              },
+              {
+                content: "this is answerB3",
+                value: false,
+              },
+            ],
+          },
+
+          {
+            question: "what is C?",
+            answers: [
+              {
+                content: "this is answerC1",
+                value: false,
+              },
+              {
+                content: "this is answerC2",
+                value: false,
+              },
+              {
+                content: "this is answerC3",
+                value: true,
+              },
+            ],
+          },
+          {
+            question: "what is D?",
+            answers: [
+              {
+                content: "this is answerD1",
+                value: false,
+              },
+              {
+                content: "this is answerD2",
+                value: false,
+              },
+              {
+                content: "this is answerD3",
+                value: true,
+              },
+            ],
+          },
+        ];
+
+        class App extends React.Component {
+          constructor() {
+            super();
+            this.state = {
+              resultValue: false, //最後に結果を表示するときtrueとなる
+              isAnswered: [false, false, false],
+              setsNum: 0, //現在何問目か
+              totalQuestionNum: 3, //問題総数 (0,1,2...)
+              correctNum: 0,
+              sets: [],
+              answersNum:3,//1,2,3つ
+            };
+          }
+
+          putResult() {
+            this.setState(() => ({
+              resultValue: true,
+            }));
+          }
+
+          changeSets() {
+            //答えられてなかった場合
+            if (
+              !this.state.isAnswered[0] &&
+              !this.state.isAnswered[1] &&
+              !this.state.isAnswered[2]
+            ) {
+              return;
+            }
+            if (this.state.setsNum === this.state.totalQuestionNum) {
+              this.putResult();
+              return;
+            }
+            this.setState(() => ({
+              setsNum: this.state.setsNum + 1,
+              isAnswered: [false, false, false],
+            }));
+          }
+
+          isAnsweredReset() {
+            this.setState(() => ({
+              isAnswered: [false, false, false],
+            }));
+          }
+
+          beTrueisAnswered(i) {
+            if (
+              //重複解答を防ぐため
+              this.state.isAnswered[0] ||
+              this.state.isAnswered[1] ||
+              this.state.isAnswered[2]
+            ) {
+              return;
+            }
+            const isAnswered = this.state.isAnswered;
+            isAnswered[i] = true;
+            if (this.state.sets[this.state.setsNum].answers[i].value === true) {
+              //正答時
+              this.setState(() => ({
+                correctNum: this.state.correctNum + 1,
+                isAnswered: isAnswered,
+              }));
+            } else {
+              //不正答時
+              this.setState(() => ({
+                isAnswered: isAnswered,
+              }));
+            }
+          }
+
+          UNSAFE_componentWillMount() {
+            //<-ライフサイクルメソッドhttps://www.to-r.net/media/react-tutorial09/
+            //フィッシャーイェールツのシャッフル
+            for (let i = 0; i <= this.state.totalQuestionNum; i++) {
+              let j = Math.floor(Math.random() * (i + 1));
+              let tmp = sets[i];
+              sets[i] = sets[j];
+              sets[j] = tmp;
+            }
+
+            for (let i = 0; i <= this.state.totalQuestionNum; i++) {
+              //問題数分
+              for (let j = 0; j < this.state.answersNum; j++) {
+                //解答数分
+                let k = Math.floor(Math.random() * (j + 1));
+                let tmp = sets[i].answers[j];
+                sets[i].answers[j] = sets[i].answers[k];
+                sets[i].answers[k] = tmp;
+              }
+            }
+
+            this.setState(() => ({
+              sets: sets,
+            }));
+          }
+
+          render() {
+            return (
+              <div className="container">
+                <Result
+                  correctNum={this.state.correctNum}
+                  totalQuestionNum={this.state.totalQuestionNum}
+                  resultValue={this.state.resultValue}
+                />
+                <h1>
+                  {this.state.setsNum !== this.state.totalQuestionNum + 1
+                    ? this.state.sets[this.state.setsNum].question
+                    : ""}
+                </h1>
+                <AnswersList
+                  set={this.state.sets[this.state.setsNum]}
+                  isAnswered={this.state.isAnswered}
+                  beTrueisAnswered={(i) => this.beTrueisAnswered(i)}
+                />
+                <Btn
+                  changeSets={() => this.changeSets()}
+                  isAnswered={this.state.isAnswered}
+                  setsNum={this.state.setsNum}
+                  totalQuestionNum={this.state.totalQuestionNum}
+                />
+              </div>
+            );
+          }
+        }
+
+        function Result(props) {
+          function validJudge(resultValue) {
+            if (resultValue === false) {
+              return "invalid_result";
+            } else {
+              return "valid_result";
+            }
+          }
+
+          return (
+            <div className={validJudge(props.resultValue)}>
+              <p>
+                score:{props.correctNum}/{props.totalQuestionNum + 1}
+              </p>
+              <a href="" className="valid_btn">
+                Replay?
+              </a>
+            </div>
+          );
+        }
+
+        function Btn(props) {
+          function btnContent(setsNum, totalQuestionNum) {
+            if (setsNum === totalQuestionNum) {
+              return "Result";
+            } else {
+              return "Next";
+            }
+          }
+          function validBtn(isAnswered) {
+            //答えられている1つでもtrueならvalid
+            if (isAnswered[0] || isAnswered[1] || isAnswered[2]) {
+              return "valid_btn";
+            } else {
+              return "invalid_btn";
+            }
+          }
+          return (
+            <div
+              onClick={() => props.changeSets()}
+              className={validBtn(props.isAnswered)}
+            >
+              {btnContent(props.setsNum, props.totalQuestionNum)}
+            </div>
+          );
+        }
+
+        function AnswersList(props) {
+          return (
+            <ul>
+              <Answer
+                value={props.set.answers[0].value}
+                content={props.set.answers[0].content}
+                isAnswered={props.isAnswered[0]}
+                beTrueisAnswered={() => props.beTrueisAnswered(0)}
+              />
+              <Answer
+                value={props.set.answers[1].value}
+                content={props.set.answers[1].content}
+                isAnswered={props.isAnswered[1]}
+                beTrueisAnswered={() => props.beTrueisAnswered(1)}
+              />
+              <Answer
+                value={props.set.answers[2].value}
+                content={props.set.answers[2].content}
+                isAnswered={props.isAnswered[2]}
+                beTrueisAnswered={() => props.beTrueisAnswered(2)}
+              />
+            </ul>
+          );
+        }
+
+        function Answer(props) {
+          function colorDecider(isAnswered, value) {
+            if (!isAnswered) {
+              return "nomal";
+            }
+            if (value) {
+              //correct
+              return "green";
+            } else {
+              //wrong
+              return "red";
+            }
+          }
+          return (
+            <li
+              className={colorDecider(props.isAnswered, props.value)}
+              onClick={() => props.beTrueisAnswered()}
+            >
+              {props.content}
+            </li>
+          );
+        }
+
+        ReactDOM.render(<App />, document.getElementById("root"));
+      })();
+    </script>
+  </body>
+</html>
